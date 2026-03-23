@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Photon Rooms Chat</title>
+
+<script src="https://unpkg.com/photon-realtime@4.1.1.3/dist/PhotonRealtime.min.js"></script>
+
+<style>
+
+body{
+    font-family: Arial;
+    background:#1e1e1e;
+    color:white;
+    text-align:center;
+}
+
+.container{
+    width:350px;
+    margin:20px auto;
+    background:#2b2b2b;
+    padding:15px;
+    border-radius:10px;
+}
+
+input{
+    width:90%;
+    padding:6px;
+    margin:4px;
+    border-radius:5px;
+    border:none;
+}
+
+button{
+    padding:6px 10px;
+    margin:4px;
+    border:none;
+    border-radius:5px;
+    background:#4caf50;
+    color:white;
+    cursor:pointer;
+}
+
+button:hover{
+    background:#66bb6a;
+}
+
+#chat{
+    height:180px;
+    overflow-y:auto;
+    background:black;
+    margin:5px;
+    padding:5px;
+    text-align:left;
+}
+
+</style>
+
+</head>
+<body>
+
+<div class="container">
+
+<h2>Photon Chat</h2>
+
+<input id="username" placeholder="Username">
+<br>
+<button onclick="connect()">Connect</button>
+
+<hr>
+
+<input id="room" placeholder="Room name">
+<br>
+
+<button onclick="createRoom()">Create Room</button>
+<button onclick="joinRoom()">Join Room</button>
+
+<hr>
+
+<div id="chat"></div>
+
+<input id="msg" placeholder="Message">
+<button onclick="send()">Send</button>
+
+</div>
+
+
+<script>
+
+const APP_ID = "b82782de-8bb2-478a-8a94-0ca9c705a926";
+
+let client;
+let username = "";
+
+function log(t){
+    let chat = document.getElementById("chat");
+    chat.innerHTML += t + "<br>";
+    chat.scrollTop = chat.scrollHeight;
+}
+
+
+function connect(){
+
+    username = document.getElementById("username").value;
+
+    client = new Photon.LoadBalancing.LoadBalancingClient(
+        Photon.ConnectionProtocol.Wss,
+        APP_ID,
+        "1.0"
+    );
+
+    client.onStateChange = function(state){
+
+        console.log(state);
+
+        if(state === Photon.LoadBalancing.LoadBalancingClient.State.JoinedLobby){
+            log("Connected to lobby");
+        }
+
+        if(state === Photon.LoadBalancing.LoadBalancingClient.State.Joined){
+            log("Joined room");
+        }
+
+    };
+
+    client.onEvent = function(code, content){
+
+        if(code === 1){
+            log(content);
+        }
+
+    };
+
+    client.connectToRegionMaster("eu");
+
+}
+
+
+function createRoom(){
+
+    let room = document.getElementById("room").value;
+
+    client.createRoom(room);
+
+}
+
+
+function joinRoom(){
+
+    let room = document.getElementById("room").value;
+
+    client.joinRoom(room);
+
+}
+
+
+function send(){
+
+    let m = document.getElementById("msg").value;
+
+    client.raiseEvent(
+        1,
+        username + ": " + m,
+        { receivers: Photon.LoadBalancing.Constants.ReceiverGroup.All }
+    );
+
+}
+
+</script>
+
+</body>
+</html>
